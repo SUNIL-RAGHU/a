@@ -18,7 +18,6 @@ class _HomePageState extends State<HomePage> {
   TextEditingController frameworkController = TextEditingController();
   List<Serverclass> Servers = [];
 
-  int selectedIndex = -1;
   late StreamController<List<Serverclass>> _streamController;
 
   @override
@@ -99,7 +98,6 @@ class _HomePageState extends State<HomePage> {
       if (response.statusCode == 200) {
         setState(() {
           Servers.removeWhere((contact) => contact.id == id);
-          selectedIndex = -1;
         });
       } else {
         throw Exception('Failed to delete contact');
@@ -107,51 +105,6 @@ class _HomePageState extends State<HomePage> {
     } catch (e) {
       print('Error: $e');
     }
-  }
-
-  Widget getRow(int index) {
-    return Card(
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: index % 2 == 0 ? Colors.deepPurpleAccent : Colors.purple,
-          foregroundColor: Colors.white,
-          child: Text(
-            Servers[index].name[0],
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                Servers[index].name,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text('ID: ${Servers[index].id}'),
-          ],
-        ),
-        subtitle: Row(
-          children: [
-            Text('Language: ${Servers[index].language}'),
-            const SizedBox(width: 10),
-            Text('Framework: ${Servers[index].framework}'),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              onPressed: () {
-                _deleteContact(Servers[index].id);
-              },
-              icon: const Icon(Icons.delete),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   @override
@@ -248,26 +201,48 @@ class _HomePageState extends State<HomePage> {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            StreamBuilder<List<Serverclass>>(
-              stream: _streamController.stream,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return CircularProgressIndicator();
-                } else if (snapshot.hasError) {
-                  return Text('Error: ${snapshot.error}');
-                } else if (snapshot.hasData) {
-                  Servers = snapshot.data!;
-                  return Expanded(
-                    child: ListView.builder(
-                      itemCount: Servers.length,
-                      itemBuilder: (context, index) => getRow(index),
-                    ),
-                  );
-                } else {
-                  return Text('No Servers yet..');
-                }
-              },
+            const SizedBox(height: 20),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: StreamBuilder<List<Serverclass>>(
+                stream: _streamController.stream,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return CircularProgressIndicator();
+                  } else if (snapshot.hasError) {
+                    return Text('Error: ${snapshot.error}');
+                  } else if (snapshot.hasData) {
+                    Servers = snapshot.data!;
+                    return DataTable(
+                      columns: const [
+                        DataColumn(label: Text('ID')),
+                        DataColumn(label: Text('Name')),
+                        DataColumn(label: Text('Language')),
+                        DataColumn(label: Text('Framework')),
+                        DataColumn(label: Text('Actions')),
+                      ],
+                      rows: Servers.map((server) {
+                        return DataRow(cells: [
+                          DataCell(Text(server.id)),
+                          DataCell(Text(server.name)),
+                          DataCell(Text(server.language)),
+                          DataCell(Text(server.framework)),
+                          DataCell(
+                            IconButton(
+                              onPressed: () {
+                                _deleteContact(server.id);
+                              },
+                              icon: const Icon(Icons.delete),
+                            ),
+                          ),
+                        ]);
+                      }).toList(),
+                    );
+                  } else {
+                    return Text('No Servers yet..');
+                  }
+                },
+              ),
             ),
           ],
         ),
@@ -275,4 +250,5 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+
 
